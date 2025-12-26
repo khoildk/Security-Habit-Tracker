@@ -7,57 +7,31 @@
 </head>
 <body>
 
-  <!-- KHUNG WEB -->
   <div class="container">
 
-    <h1>Security Habit Tracker</h1>
-    <p>Theo dõi thói quen bảo mật cá nhân</p>
+    <h1>🔐 Security Habit Tracker</h1>
+    <p>Theo dõi và phân tích thói quen bảo mật cá nhân</p>
 
     <form id="habitForm">
-      <label>
-        <input type="checkbox" id="twoFA" data-score="20">
-        Bật xác thực 2 lớp (2FA)
-      </label>
-
-      <label>
-        <input type="checkbox" data-score="20">
-        Không dùng chung mật khẩu
-      </label>
-
-      <label>
-        <input type="checkbox" id="changePassword" data-score="20">
-        Đổi mật khẩu định kỳ
-      </label>
+      <label><input type="checkbox" id="twoFA" data-score="20"> Bật xác thực 2 lớp (2FA)</label>
+      <label><input type="checkbox" id="noReusePassword" data-score="20"> Không dùng chung mật khẩu</label>
+      <label><input type="checkbox" id="changePassword" data-score="20"> Đổi mật khẩu định kỳ</label>
 
       <div id="passwordBox" style="display:none;">
         <input type="password" id="newPassword" placeholder="Nhập mật khẩu mới">
+        <p class="hint">🔒 Không sử dụng lại mật khẩu đã dùng trước đó</p>
         <button type="button" id="savePassword">Lưu mật khẩu</button>
         <p id="passwordMsg"></p>
       </div>
 
-      <label>
-        <input type="checkbox" data-score="15">
-        Cảnh giác link/email lạ
-      </label>
-
-      <label>
-        <input type="checkbox" data-score="15">
-        Dùng Password Manager
-      </label>
-
-      <label>
-        <input type="checkbox" data-score="10">
-        Kiểm tra đăng nhập bất thường
-      </label>
+      <label><input type="checkbox" id="phishingAware" data-score="15"> Cảnh giác link/email lạ</label>
+      <label><input type="checkbox" id="passwordManager" data-score="15"> Dùng Password Manager</label>
+      <label><input type="checkbox" id="checkLogin" data-score="10"> Kiểm tra đăng nhập bất thường</label>
     </form>
 
-    <!-- NÚT XÁC NHẬN -->
-    <button type="button" id="confirmChecklist">
-      Xác nhận checklist
-    </button>
+    <button type="button" id="confirmChecklist">✅ Xác nhận checklist</button>
     <p id="confirmMsg"></p>
 
-    <!-- HIỂN THỊ KẾT QUẢ -->
     <h2>Security Score: <span id="score">0</span>/100</h2>
     <p id="level"></p>
 
@@ -66,18 +40,20 @@
 
     <hr>
 
-    <h3>Phân tích thói quen bảo mật</h3>
+    <h3>📊 Biểu đồ điểm bảo mật theo thời gian</h3>
+    <canvas id="scoreChart" height="180"></canvas>
+
+    <!-- HIỂN THỊ THỜI GIAN CHECK -->
+    <p id="chartTimeInfo" style="margin-top:10px; font-size:14px; color:#555;"></p>
+
+    <hr>
+
+    <h3>🧠 Phân tích thói quen bảo mật</h3>
     <p id="behaviorWarning"></p>
-<hr>
-
-<h3>📊 Lịch sử checklist gần đây</h3>
-<ul id="historyList"></ul>
-
-<canvas id="scoreChart" width="300" height="200"></canvas>
-
 
   </div>
 
-  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
