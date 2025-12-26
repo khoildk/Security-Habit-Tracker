@@ -1,34 +1,34 @@
-// ================== KHAI BÁO ==================
 const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-const scoreEl = document.getElementById('score');
-const levelEl = document.getElementById('level');
+const scoreEl = document.getElementById("score");
+const levelEl = document.getElementById("level");
+const behaviorWarning = document.getElementById("behaviorWarning");
+const chartTimeInfo = document.getElementById("chartTimeInfo");
+
 const confirmBtn = document.getElementById("confirmChecklist");
 const confirmMsg = document.getElementById("confirmMsg");
 
 const changePasswordCb = document.getElementById("changePassword");
 const passwordBox = document.getElementById("passwordBox");
-const savePasswordBtn = document.getElementById("savePassword");
 const passwordInput = document.getElementById("newPassword");
+const savePasswordBtn = document.getElementById("savePassword");
 const passwordMsg = document.getElementById("passwordMsg");
 
-const lastDateEl = document.getElementById("lastDate");
-const prevDateEl = document.getElementById("prevDate");
-const historyList = document.getElementById("historyList");
-const behaviorWarning = document.getElementById("behaviorWarning");
+passwordBox.style.display = "none";
+let chart;
 
-// ================== THỜI GIAN ==================
+/* ===== TIME ===== */
 function getCurrentDateTime() {
   return new Date().toLocaleString("vi-VN");
 }
 
-// ================== TÍNH ĐIỂM ==================
+function getCurrentDate() {
+  return new Date().toLocaleDateString("vi-VN");
+}
+
+/* ===== SCORE ===== */
 function updateScore() {
   let score = 0;
-
-  checkboxes.forEach(cb => {
-    if (cb.checked) score += Number(cb.dataset.score);
-  });
-
+  checkboxes.forEach(cb => cb.checked && (score += Number(cb.dataset.score)));
   scoreEl.textContent = score;
 
   if (score >= 80) {
@@ -41,158 +41,136 @@ function updateScore() {
     levelEl.textContent = "🔴 Nguy cơ cao";
     levelEl.style.color = "red";
   }
-
-  analyzeBehavior(score);
 }
 
-checkboxes.forEach(cb => cb.addEventListener("change", updateScore));
+/* ===== ANALYSIS ===== */
+function analyzeBehavior() {
+  const rules = [
+    ["twoFA", "⚠️ Chưa bật xác thực 2 lớp (2FA)."],
+    ["noReusePassword", "⚠️ Có nguy cơ dùng lại mật khẩu."],
+    ["changePassword", "⚠️ Không đổi mật khẩu định kỳ."],
+    ["phishingAware", "⚠️ Dễ bị lừa qua email/link giả mạo."],
+    ["passwordManager", "⚠️ Không dùng Password Manager."],
+    ["checkLogin", "⚠️ Không kiểm tra đăng nhập bất thường."]
+  ];
 
-// ================== PHÂN TÍCH HÀNH VI ==================
-function analyzeBehavior(score) {
-  const twoFA = document.getElementById("twoFA");
+  const warnings = rules
+    .filter(([id]) => !document.getElementById(id).checked)
+    .map(r => r[1]);
 
-  if (!twoFA.checked) {
-    behaviorWarning.textContent =
-      "⚠️ Bạn chưa bật 2FA – đây là rủi ro bảo mật lớn nhất hiện nay.";
-  } else if (score < 50) {
-    behaviorWarning.textContent =
-      "⚠️ Thói quen bảo mật của bạn đang ở mức thấp, cần cải thiện.";
-  } else if (score >= 80) {
-    behaviorWarning.textContent =
-      "✅ Thói quen bảo mật tốt, hãy duy trì thường xuyên.";
+  if (warnings.length === 0) {
+    behaviorWarning.innerHTML = "✅ Bạn có thói quen bảo mật rất tốt!";
+    behaviorWarning.style.color = "green";
   } else {
-    behaviorWarning.textContent = "";
+    behaviorWarning.innerHTML = warnings.join("<br>");
+    behaviorWarning.style.color = warnings.length > 3 ? "red" : "orange";
   }
 }
 
-// ================== ĐỔI MẬT KHẨU ==================
+/* ===== PASSWORD ===== */
 changePasswordCb.addEventListener("change", () => {
   passwordBox.style.display = changePasswordCb.checked ? "block" : "none";
 });
 
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
+async function hashPassword(pwd) {
+  const data = new TextEncoder().encode(pwd);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2,"0")).join("");
 }
 
 savePasswordBtn.addEventListener("click", async () => {
   const pwd = passwordInput.value;
-
   if (pwd.length < 8) {
-    passwordMsg.textContent = "❌ Mật khẩu phải ≥ 8 ký tự";
+    passwordMsg.textContent = "❌ Mật khẩu ≥ 8 ký tự";
     passwordMsg.style.color = "red";
     return;
   }
 
   const newHash = await hashPassword(pwd);
-  const oldHash = localStorage.getItem("passwordHash");
+  const history = JSON.parse(localStorage.getItem("passwordHistory") || "[]");
 
-  if (oldHash && newHash === oldHash) {
+  if (history.includes(newHash)) {
     passwordMsg.textContent = "❌ Không được dùng lại mật khẩu cũ";
     passwordMsg.style.color = "red";
     return;
   }
 
-  localStorage.setItem("passwordHash", newHash);
+  history.push(newHash);
+  localStorage.setItem("passwordHistory", JSON.stringify(history.slice(-5)));
+
   passwordMsg.textContent = "✅ Mật khẩu đã lưu an toàn";
   passwordMsg.style.color = "green";
   passwordInput.value = "";
 });
 
-// ================== LỊCH SỬ CHECKLIST ==================
-function getHistory() {
-  return JSON.parse(localStorage.getItem("checklistHistory")) || [];
-}
+/* ===== CHART ===== */
+function renderChart() {
+  const ctx = document.getElementById("scoreChart");
+  if (!ctx) return;
 
-function saveHistory(score) {
-  const history = getHistory();
-  history.push({
-    time: getCurrentDateTime(),
-    score
+  const history = JSON.parse(localStorage.getItem("scoreHistory") || "[]");
+
+  const labels = history.map(item => item.date);
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Security Score",
+        data: history.map(item => item.score),
+        borderWidth: 2,
+        tension: 0.3
+      }]
+    },
+    options: {
+      scales: {
+        y: { min: 0, max: 100 }
+      }
+    }
   });
 
-  if (history.length > 5) history.shift();
-  localStorage.setItem("checklistHistory", JSON.stringify(history));
+  chartTimeInfo.innerHTML = history
+    .map(item => `🕒 ${item.datetime}`)
+    .join("<br>");
 }
 
-function renderHistory() {
-  historyList.innerHTML = "";
-  getHistory().forEach(item => {
-    const li = document.createElement("li");
-    li.textContent = `${item.time} — ${item.score} điểm`;
-    historyList.appendChild(li);
-  });
-}
-
-// ================== BIỂU ĐỒ ==================
-function drawChart() {
-  const canvas = document.getElementById("scoreChart");
-  const ctx = canvas.getContext("2d");
-  const history = getHistory();
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (history.length < 2) return;
-
-  const padding = 30;
-  const stepX = (canvas.width - padding * 2) / (history.length - 1);
-
-  ctx.beginPath();
-  history.forEach((item, i) => {
-    const x = padding + i * stepX;
-    const y =
-      canvas.height -
-      padding -
-      (item.score / 100) * (canvas.height - padding * 2);
-
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-  });
-
-  ctx.strokeStyle = "#007bff";
-  ctx.stroke();
-}
-
-// ================== XÁC NHẬN CHECKLIST ==================
+/* ===== CONFIRM ===== */
 confirmBtn.addEventListener("click", () => {
   const score = Number(scoreEl.textContent);
-
   if (score === 0) {
-    confirmMsg.textContent = "⚠️ Vui lòng hoàn thành checklist trước";
+    confirmMsg.textContent = "⚠️ Vui lòng hoàn thành checklist";
     confirmMsg.style.color = "red";
     return;
   }
 
   const now = getCurrentDateTime();
-  const last = localStorage.getItem("lastChecklistDate");
+  const date = getCurrentDate();
 
-  if (last) localStorage.setItem("previousChecklistDate", last);
+  const history = JSON.parse(localStorage.getItem("scoreHistory") || "[]");
+  history.push({ score, date, datetime: now });
+  localStorage.setItem("scoreHistory", JSON.stringify(history.slice(-5)));
+
+  localStorage.setItem("previousChecklistDate", localStorage.getItem("lastChecklistDate"));
   localStorage.setItem("lastChecklistDate", now);
 
-  lastDateEl.textContent = now;
-  prevDateEl.textContent =
+  document.getElementById("lastDate").textContent = now;
+  document.getElementById("prevDate").textContent =
     localStorage.getItem("previousChecklistDate") || "Chưa có";
 
-  saveHistory(score);
-  renderHistory();
-  drawChart();
+  analyzeBehavior();
+  renderChart();
 
-  confirmMsg.textContent = "✅ Checklist đã được lưu thành công";
+  confirmMsg.textContent = "✅ Checklist đã được lưu & phân tích";
   confirmMsg.style.color = "green";
 });
 
-// ================== LOAD TRANG ==================
-window.addEventListener("load", () => {
-  lastDateEl.textContent =
-    localStorage.getItem("lastChecklistDate") || "Chưa có";
-  prevDateEl.textContent =
-    localStorage.getItem("previousChecklistDate") || "Chưa có";
+/* ===== INIT ===== */
+checkboxes.forEach(cb => cb.addEventListener("change", updateScore));
 
-  renderHistory();
-  drawChart();
+window.addEventListener("load", () => {
+  updateScore();
+  renderChart();
 });
