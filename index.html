@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Security Habit Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- KHUNG WEB -->
+  <div class="container">
+
+    <h1>Security Habit Tracker</h1>
+    <p>Theo dõi thói quen bảo mật cá nhân</p>
+
+    <form id="habitForm">
+      <label>
+        <input type="checkbox" id="twoFA" data-score="20">
+        Bật xác thực 2 lớp (2FA)
+      </label>
+
+      <label>
+        <input type="checkbox" data-score="20">
+        Không dùng chung mật khẩu
+      </label>
+
+      <label>
+        <input type="checkbox" id="changePassword" data-score="20">
+        Đổi mật khẩu định kỳ
+      </label>
+
+      <div id="passwordBox" style="display:none;">
+        <input type="password" id="newPassword" placeholder="Nhập mật khẩu mới">
+        <button type="button" id="savePassword">Lưu mật khẩu</button>
+        <p id="passwordMsg"></p>
+      </div>
+
+      <label>
+        <input type="checkbox" data-score="15">
+        Cảnh giác link/email lạ
+      </label>
+
+      <label>
+        <input type="checkbox" data-score="15">
+        Dùng Password Manager
+      </label>
+
+      <label>
+        <input type="checkbox" data-score="10">
+        Kiểm tra đăng nhập bất thường
+      </label>
+    </form>
+
+    <!-- NÚT XÁC NHẬN -->
+    <button type="button" id="confirmChecklist">
+      Xác nhận checklist
+    </button>
+    <p id="confirmMsg"></p>
+
+    <!-- HIỂN THỊ KẾT QUẢ -->
+    <h2>Security Score: <span id="score">0</span>/100</h2>
+    <p id="level"></p>
+
+    <p>Lần checklist gần nhất: <strong id="lastDate">Chưa có</strong></p>
+    <p>Lần checklist trước đó: <strong id="prevDate">Chưa có</strong></p>
+
+    <hr>
+
+    <h3>Phân tích thói quen bảo mật</h3>
+    <p id="behaviorWarning"></p>
+<hr>
+
+<h3>📊 Lịch sử checklist gần đây</h3>
+<ul id="historyList"></ul>
+
+<canvas id="scoreChart" width="300" height="200"></canvas>
+
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
